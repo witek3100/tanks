@@ -8,5 +8,6 @@ git clone https://github.com/witek3100/tanks
 cd tanks
 pip install -r requirements.txt
 python game.py
+
 ```
 Or try browser version here
