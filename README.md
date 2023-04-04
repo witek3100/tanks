@@ -1,5 +1,5 @@
 # tanks
-tanks game in pygame
+pygame implementation of iconic childhood game tanks2d
 
 ##
 Run locally:
