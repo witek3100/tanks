@@ -60,11 +60,12 @@ class Button:
             return False
 
 class Game:
-    def __init__(self, players):
+    def __init__(self, players, num_of_rounds):
         self.board = [[Pixel(3*x, 3*y) for x in range(300)] for y in range(200)]
         self.players = [Player(i, (255,255,255)) for i in range(players)]
         self.next_turn = lambda player : player + 1 if player < len(self.players)-1 else 0
         self.ground_function = lambda x : 2*math.sqrt(x) + 400
+        self.num_of_rounds = num_of_rounds
 
 class Player:
     def __init__(self, id, color):

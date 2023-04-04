@@ -49,10 +49,19 @@ next_turn = lambda player : player + 1 if player < len(tanks)-1 else 0
 wind = random.randint(-10, 10)
 player = 0
 
-buttons = {'new game button' : models.Button(screen, (393, 150), (120, 30), 'NEW GAME', True),
-            'create game button' : models.Button(screen, (370, 250), (160, 30), 'CREATE GAME', False),
-           'decrease players button' : models.Button(screen, (370, 190), (20, 20), '-', False),
-           'increase players button' : models.Button(screen, (510, 190), (20, 20), '+', False),}
+num_of_players = 2
+num_of_rounds = 5
+buttons = {'new game button' : models.Button(screen, (390, 150), (120, 30), 'NEW GAME', True),
+           'text num of players' : models.Button(screen, (380, 120), (140, 20), '     players', False),
+           'decrease players button' : models.Button(screen, (370, 170), (20, 20), '-', False),
+           'increase players button' : models.Button(screen, (510, 170), (20, 20), '+', False),
+           'num of players' : models.Button(screen, (440, 170), (20, 20), '{}'.format(num_of_players), False),
+           'text num of rounds': models.Button(screen, (380, 240), (140, 20), '     rounds', False),
+           'decrease num of rounds': models.Button(screen, (370, 290), (20, 20), '-', False),
+           'increase num of rounds': models.Button(screen, (510, 290), (20, 20), '+', False),
+           'num of rounds': models.Button(screen, (440, 290), (20, 20), '{}'.format(num_of_rounds), False),
+           'create game button': models.Button(screen, (370, 360), (160, 30), 'CREATE GAME', False),
+           }
 
 ''' menu loop '''
 run_menu = True
@@ -95,16 +104,27 @@ while run_menu:
 
     game = None
     if buttons['new game button'].clicked():
+        for button_key in buttons.keys():
+            buttons[button_key].active = True
         buttons['new game button'].active = False
-        buttons['create game button'].active = True
-        buttons['decrease players button'].active = True
-        buttons['increase players button'].active = True
 
-    buttons['new game button'].draw()
-    buttons['create game button'].draw()
-    buttons['decrease players button'].draw()
-    buttons['increase players button'].draw()
+    for button_key in buttons.keys():
+        buttons[button_key].draw()
 
+    if buttons['create game button'].clicked():
+        game = models.Game(num_of_players, num_of_rounds)
+    if buttons['increase players button'].clicked():
+        num_of_players += 1
+        buttons['num of players'] = models.Button(screen, (440, 170), (20, 20), '{}'.format(num_of_players), False)
+    if buttons['decrease players button'].clicked():
+        num_of_players -= 1
+        buttons['num of players'] = models.Button(screen, (440, 170), (20, 20), '{}'.format(num_of_players), False)
+    if buttons['increase num of rounds'].clicked():
+        num_of_rounds += 1
+        buttons['num of rounds'] = models.Button(screen, (440, 290), (20, 20), '{}'.format(num_of_rounds), False)
+    if buttons['decrease num of rounds'].clicked():
+        num_of_rounds -= 1
+        buttons['num of rounds'] = models.Button(screen, (440, 290), (20, 20), '{}'.format(num_of_rounds), False)
 
     ''' round loop '''
     while game:
