@@ -18,7 +18,7 @@ ORANGE = (255, 140, 0)
 screen = pygame.display.set_mode((900, 600))
 board = [[models.Pixel(3*x, 3*y) for x in range(300)] for y in range(200)]
 
-ground_function = lambda x : 2*math.sqrt(x) + 400
+ground_function = lambda x : 2*math.sqrt(x) + 500
 for column in board:
     for pixel in column:
         if ground_function(pixel.x) < pixel.y:
@@ -48,6 +48,11 @@ next_turn = lambda player : player + 1 if player < len(tanks)-1 else 0
 
 wind = random.randint(-10, 10)
 player = 0
+
+buttons = {'new game button' : models.Button(screen, (393, 150), (120, 30), 'NEW GAME', True),
+            'create game button' : models.Button(screen, (370, 250), (160, 30), 'CREATE GAME', False),
+           'decrease players button' : models.Button(screen, (370, 190), (20, 20), '-', False),
+           'increase players button' : models.Button(screen, (510, 190), (20, 20), '+', False),}
 
 ''' menu loop '''
 run_menu = True
@@ -80,7 +85,7 @@ while run_menu:
         shoting_tank = random.choice([tank1, tank2])
         weapon = shoting_tank.shot()
     weapon.draw(screen)
-    time.sleep(0.02)
+    time.sleep(0.01)
     weapon.x += weapon.velocity_x
     weapon.y += weapon.velocity_y
     weapon.velocity_y += 0.2
@@ -88,26 +93,33 @@ while run_menu:
         explosion(weapon.x, weapon.y, 30)
         weapon = None
 
-    new_game_button = models.Button(screen, (393, 150), (120, 30), 'NEW GAME')
-    if new_game_button.clicked():
-        weapon = None
-        run_round = True
-    new_game_button.draw()
+    game = None
+    if buttons['new game button'].clicked():
+        buttons['new game button'].active = False
+        buttons['create game button'].active = True
+        buttons['decrease players button'].active = True
+        buttons['increase players button'].active = True
+
+    buttons['new game button'].draw()
+    buttons['create game button'].draw()
+    buttons['decrease players button'].draw()
+    buttons['increase players button'].draw()
+
 
     ''' round loop '''
-    while run_round:
+    while game:
+        background = pygame.image.load("static/mountains.jpg").convert()
+        screen.blit(background, (0, 0))
         for column in board:
             for pixel in column:
                 if pixel.ground:
                     pygame.draw.rect(screen, GREEN, (pixel.x, pixel.y, 3, 3))
-                else:
-                    pygame.draw.rect(screen, BLUE, (pixel.x, pixel.y, 3, 3))
 
         ''' players info text boxes '''
         text_boxes = []
         for tank in tanks:
             text_boxes.append(pygame.font.Font('freesansbold.ttf', 20).render(
-                'Player 1 - score: {}  tank health: {}'.format(100, tank.health), True, tank.color))
+                'PLAYER 1     score {}     hp {}'.format(100, tank.health), True, tank.color))
 
         for c, player_data in enumerate(text_boxes):
             text_rect = player_data.get_rect()

@@ -1,12 +1,9 @@
 import time
-
 import pygame
 import math
 
-
 class Button:
-
-    def __init__(self, screen, pos, size, text):
+    def __init__(self, screen, pos, size, text, active):
         #main vars
         self.screen = screen
         self.position = pos
@@ -14,6 +11,7 @@ class Button:
         self.top_rect = pygame.Rect(self.position[0], self.position[1], self.size[0], self.size[1])
         self.bottom_rect = pygame.Rect(self.position[0] + 2, self.position[1] + 5, self.size[0], self.size[1])
         self.pressed = False
+        self.active = active
 
         #colors
         self.__top_rect_normal_color = (205,205,0)
@@ -30,37 +28,43 @@ class Button:
         self.__text = self.__text_font.render(text, False, (0, 0, 0))
 
     def draw(self):
-        pygame.draw.circle(self.screen, self.__bottom_rect_color, self.bottom_rect.bottomleft, 10)
-        pygame.draw.circle(self.screen, self.__bottom_rect_color, self.bottom_rect.bottomright, 10)
-        pygame.draw.circle(self.screen, self.__bottom_rect_color, self.bottom_rect.topright, 10)
-        pygame.draw.rect(self.screen, self.__bottom_rect_color, ((self.bottom_rect.topleft[0] - 10, self.bottom_rect.topleft[1]), (self.bottom_rect.size[0] + 20, self.bottom_rect.size[1])))
-        pygame.draw.rect(self.screen, self.__bottom_rect_color, ((self.bottom_rect.topleft[0], self.bottom_rect.topleft[1] - 10), (self.bottom_rect.size[0], self.bottom_rect.size[1] + 20)))
-        pygame.draw.circle(self.screen, self.__top_rect_color, self.top_rect.bottomleft, 10)
-        pygame.draw.circle(self.screen, self.__top_rect_color, self.top_rect.bottomright, 10)
-        pygame.draw.circle(self.screen, self.__top_rect_color, self.top_rect.topleft, 10)
-        pygame.draw.circle(self.screen, self.__top_rect_color, self.top_rect.topright, 10)
-        pygame.draw.rect(self.screen, self.__top_rect_color, ((self.top_rect.topleft[0] - 10, self.top_rect.topleft[1]), (self.top_rect.size[0] + 20, self.top_rect.size[1])))
-        pygame.draw.rect(self.screen, self.__top_rect_color, ((self.top_rect.topleft[0], self.top_rect.topleft[1] - 10), (self.top_rect.size[0], self.top_rect.size[1] + 20)))
-        self.screen.blit(self.__text, (self.position[0]+2, self.position[1]+5))
+        if self.active:
+            pygame.draw.circle(self.screen, self.__bottom_rect_color, self.bottom_rect.bottomleft, 10)
+            pygame.draw.circle(self.screen, self.__bottom_rect_color, self.bottom_rect.bottomright, 10)
+            pygame.draw.circle(self.screen, self.__bottom_rect_color, self.bottom_rect.topright, 10)
+            pygame.draw.rect(self.screen, self.__bottom_rect_color, ((self.bottom_rect.topleft[0] - 10, self.bottom_rect.topleft[1]), (self.bottom_rect.size[0] + 20, self.bottom_rect.size[1])))
+            pygame.draw.rect(self.screen, self.__bottom_rect_color, ((self.bottom_rect.topleft[0], self.bottom_rect.topleft[1] - 10), (self.bottom_rect.size[0], self.bottom_rect.size[1] + 20)))
+            pygame.draw.circle(self.screen, self.__top_rect_color, self.top_rect.bottomleft, 10)
+            pygame.draw.circle(self.screen, self.__top_rect_color, self.top_rect.bottomright, 10)
+            pygame.draw.circle(self.screen, self.__top_rect_color, self.top_rect.topleft, 10)
+            pygame.draw.circle(self.screen, self.__top_rect_color, self.top_rect.topright, 10)
+            pygame.draw.rect(self.screen, self.__top_rect_color, ((self.top_rect.topleft[0] - 10, self.top_rect.topleft[1]), (self.top_rect.size[0] + 20, self.top_rect.size[1])))
+            pygame.draw.rect(self.screen, self.__top_rect_color, ((self.top_rect.topleft[0], self.top_rect.topleft[1] - 10), (self.top_rect.size[0], self.top_rect.size[1] + 20)))
+            self.screen.blit(self.__text, (self.position[0]+2, self.position[1]+5))
 
     def clicked(self):
-        pos = pygame.mouse.get_pos()
-        if self.top_rect.collidepoint(pos):
-            self.__top_rect_color = self.__top_rect_hovered_color
-            self.__bottom_rect_color = self.__bottom_rect_hovered_color
-            if pygame.mouse.get_pressed()[0] and self.pressed == False:
-                self.top_rect.center = self.bottom_rect.center
-                self.draw()
-                pygame.display.update()
-                time.sleep(0.05)
-                return True
-        else:
-            self.__top_rect_color = self.__top_rect_normal_color
-            self.__bottom_rect_color = self.__bottom_rect_normal_color
-        return False
+        if self.active:
+            pos = pygame.mouse.get_pos()
+            if self.top_rect.collidepoint(pos):
+                self.__top_rect_color = self.__top_rect_hovered_color
+                self.__bottom_rect_color = self.__bottom_rect_hovered_color
+                if pygame.mouse.get_pressed()[0] and self.pressed == False:
+                    self.top_rect.center = self.bottom_rect.center
+                    self.draw()
+                    pygame.display.update()
+                    time.sleep(0.05)
+                    return True
+            else:
+                self.__top_rect_color = self.__top_rect_normal_color
+                self.__bottom_rect_color = self.__bottom_rect_normal_color
+            return False
+
 class Game:
     def __init__(self, players):
+        self.board = [[Pixel(3*x, 3*y) for x in range(300)] for y in range(200)]
         self.players = [Player(i, (255,255,255)) for i in range(players)]
+        self.next_turn = lambda player : player + 1 if player < len(self.players)-1 else 0
+        self.ground_function = lambda x : 2*math.sqrt(x) + 400
 
 class Player:
     def __init__(self, id, color):
@@ -111,7 +115,10 @@ class Tank:
     def move_gun(self, change):
         if 0 < self.gun_direction < 180:
             self.gun_direction += change
-
+        elif self.gun_direction <= 0:
+            self.gun_direction = 1
+        elif self.gun_direction >= 180:
+            self.gun_direction = 179
     def edit_shot_power(self, change):
         if 0 < self.shot_power < self.max_shot_power:
             self.shot_power += change
