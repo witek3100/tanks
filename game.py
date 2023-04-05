@@ -102,9 +102,11 @@ while True:
 
     ''' game loop '''
     if game:
-
+        exit_game_loop = False
         for round in range(game.num_of_rounds):
-            ranking = sorted(game.players, key=lambda player: player.score)
+            if exit_game_loop:
+                break
+            ranking = sorted(game.players, key=lambda player: player.score, reverse=True)
             ''' round pre configuration '''
             for player in game.players:
                 tank_spawn_point = random.randint(100, 800)
@@ -115,8 +117,10 @@ while True:
                 for pixel in column:
                     if game.ground_function(pixel.x) < pixel.y:
                         pixel.ground = True
-            power_slider = models.Slider(screen, (40, 40))
-
+            power_slider = models.Slider(screen, (20, 100), 'SHOT POWER')
+            gun_direction_slider = models.Slider(screen, (200, 100), 'GUN DIRECTION')
+            shot_button = models.Button(screen, (380, 100), (60, 25), 'SHOT', True)
+            exit_button = models.Button(screen, (30, 30), (60, 25), 'EXIT', True)
 
             ''' displaying round start screen '''
             screen.blit(background, (0, 0))
@@ -129,24 +133,51 @@ while True:
             round_num_text_rect_up = round_num_text_up.get_rect()
             round_num_text_rect_up.center = (447, 47)
             screen.blit(round_num_text_up, round_num_text_rect_up)
-            pygame.display.update()
-            time.sleep(2)
-            player_turn = 0
+            for c, player in enumerate(ranking):
+                player_text = pygame.font.Font('freesansbold.ttf', 30).render(f'{player}    score: {player.score}', False, player.color)
+                player_text_rect = player_text.get_rect()
+                player_text_rect.center = (450, 100 + c*40)
+                screen.blit(player_text, player_text_rect)
 
+            pygame.display.update()
+            time.sleep(3)
+            player_turn = 0
+            game.dying_order.clear()
 
             ''' round loop '''
             while run_round:
-                players_alive = sum([1 if player.tank != None else 0 for player in game.players])
+                players_alive = sum((1 if player.tank != None else 0 for player in game.players))
                 screen.blit(background, (0, 0))
                 for column in game.board:
                     for pixel in column:
                         if pixel.ground:
                             pygame.draw.rect(screen, (130, 190, 60), (pixel.x, pixel.y, 3, 3))
 
+                ''' options window '''
+                options_position = (20, 20)
+                options_top_rect = pygame.Rect(options_position[0], options_position[1], 418, 50)
+                options_bottom_rect = pygame.Rect(options_position[0] + 2, options_position[1] + 5, 418, 50)
+                pygame.draw.circle(screen, (205, 102, 0), options_bottom_rect.bottomleft, 10)
+                pygame.draw.circle(screen, (205, 102, 0), options_bottom_rect.bottomright, 10)
+                pygame.draw.circle(screen, (205, 102, 0), options_bottom_rect.topright, 10)
+                pygame.draw.rect(screen, (205, 102, 0), (
+                (options_bottom_rect.topleft[0] - 10, options_bottom_rect.topleft[1]),
+                (options_bottom_rect.size[0] + 20, options_bottom_rect.size[1])))
+                pygame.draw.rect(screen, (205, 102, 0), (
+                (options_bottom_rect.topleft[0], options_bottom_rect.topleft[1] - 10),
+                (options_bottom_rect.size[0], options_bottom_rect.size[1] + 20)))
+                pygame.draw.circle(screen, (180, 150, 0), options_top_rect.bottomleft, 10)
+                pygame.draw.circle(screen, (180, 150, 0), options_top_rect.bottomright, 10)
+                pygame.draw.circle(screen, (180, 150, 0), options_top_rect.topleft, 10)
+                pygame.draw.circle(screen, (180, 150, 0), options_top_rect.topright, 10)
+                pygame.draw.rect(screen, (180, 150, 0), ((options_top_rect.topleft[0] - 10, options_top_rect.topleft[1]),(options_top_rect.size[0] + 20, options_top_rect.size[1])))
+                pygame.draw.rect(screen, (180, 150, 0), ((options_top_rect.topleft[0], options_top_rect.topleft[1] - 10),(options_top_rect.size[0], options_top_rect.size[1] + 20)))
+                pygame.draw.polygon(screen, (255, 140, 0), ((515, 47 + 30 * player_turn), (515, 67 + 30 * player_turn), (535, 57 + 30 * player_turn)))
+
                 ''' players stats '''
-                stats_position = (500, 40)
-                stats_top_rect = pygame.Rect(stats_position[0], stats_position[1], 350, len(game.players)*30)
-                stats_bottom_rect = pygame.Rect(stats_position[0] + 2, stats_position[1] + 5, 350, len(game.players*30))
+                stats_position = (470, 20)
+                stats_top_rect = pygame.Rect(stats_position[0], stats_position[1], 390, len(game.players)*30)
+                stats_bottom_rect = pygame.Rect(stats_position[0] + 2, stats_position[1] + 5, 390, len(game.players*30))
                 pygame.draw.circle(screen, (205, 102, 0), stats_bottom_rect.bottomleft, 10)
                 pygame.draw.circle(screen, (205, 102, 0), stats_bottom_rect.bottomright, 10)
                 pygame.draw.circle(screen, (205, 102, 0), stats_bottom_rect.topright, 10)
@@ -158,8 +189,7 @@ while True:
                 pygame.draw.circle(screen, (205, 205, 0), stats_top_rect.topright, 10)
                 pygame.draw.rect(screen, (205, 205, 0), ((stats_top_rect.topleft[0] - 10, stats_top_rect.topleft[1]),(stats_top_rect.size[0] + 20, stats_top_rect.size[1])))
                 pygame.draw.rect(screen, (205, 205, 0), ((stats_top_rect.topleft[0], stats_top_rect.topleft[1] - 10),(stats_top_rect.size[0], stats_top_rect.size[1] + 20)))
-
-                pygame.draw.polygon(screen, (255, 140, 0), ((515, 47+30*player_turn), (515, 67+  30*player_turn), (535, 57+30*player_turn)))
+                pygame.draw.polygon(screen, (255, 140, 0), ((465, 22+30*player_turn), (465, 42+30*player_turn), (485, 32+30*player_turn)))
 
                 stats = []
                 for player in game.players:
@@ -168,11 +198,11 @@ while True:
                     else:
                         tank_health = 0
                     stats.append(pygame.font.Font('freesansbold.ttf', 20).render(
-                        f'PLAYER {player.player_id}     score {player.score}     hp {tank_health}', True, player.color))
+                        f'{player}     score {player.score}     hp {tank_health}', True, player.color))
                 for c, player_data in enumerate(stats):
                     text_rect = player_data.get_rect()
-                    text_rect.x += 550
-                    text_rect.y += 50 + 30*c
+                    text_rect.x += 500
+                    text_rect.y += 25 + 30*c
                     screen.blit(player_data, text_rect)
 
                 for player in game.players:
@@ -191,7 +221,7 @@ while True:
                         except IndexError:
                             player.tank = None
                             game.explosion(tank.x, tank.y, 30)
-                            player.score += 100*(len(game.players)-players_alive)
+                            game.dying_order.append(player)
 
                 if game.players[player_turn].tank == None:
                     player_turn = game.next_turn(player_turn)
@@ -227,33 +257,68 @@ while True:
                         game.players[player_turn].tank.move_gun(-1)
                     if keys[pygame.K_SPACE] and weapon == None:
                         weapon = game.players[player_turn].tank.shot()
+                    if shot_button.clicked() and weapon == None:
+                        weapon = game.players[player_turn].tank.shot()
+                    if exit_button.clicked():
+                        exit_game_loop = True
+                        break
                     power_slider.draw(game.players[player_turn].tank.max_shot_power)
                     game.players[player_turn].tank.shot_power = power_slider.clicked()
-
+                    gun_direction_slider.draw(100)
+                    game.players[player_turn].tank.gun_direction = 180 - 1.8 * gun_direction_slider.clicked()
+                    shot_button.draw()
+                    exit_button.draw()
                 except AttributeError:
                     pass
                 pygame.display.update()
 
                 if players_alive == 1:
-                    game.players[player_turn].score += 100 * len(game.players)
+                    for c, player in enumerate(game.dying_order):
+                        player.score += 500*c
+                    [player for player in game.players if player not in game.dying_order][0].score += 800 * len(game.players)
                     break
 
-        ranking = sorted(game.players, key=lambda player : player.score)
-        for i in ranking:
-            print(i.player_id, i.score)
+        ranking = sorted(game.players, key=lambda player : player.score, reverse=True)
+
         screen.blit(background, (0, 0))
         run_round = True
         winner_text_down = pygame.font.Font('freesansbold.ttf', 30).render("WINNER", False, YELLOW)
         winner_text_rect_down = winner_text_down.get_rect()
         winner_text_rect_down.center = (450, 100)
         screen.blit(winner_text_down, winner_text_rect_down)
-        winner_text_down = pygame.font.Font('freesansbold.ttf', 30).render("WINNER", False, YELLOW)
+        winner_text_down = pygame.font.Font('freesansbold.ttf', 30).render("WINNER", False, ORANGE)
         winner_text_rect_down = winner_text_down.get_rect()
         winner_text_rect_down.center = (447, 97)
         screen.blit(winner_text_down, winner_text_rect_down)
+
+        winner_text = pygame.font.Font('freesansbold.ttf', 30).render(f"{ranking[0]}", False, ranking[0].color)
+        winner_text_rect = winner_text.get_rect()
+        winner_text_rect.center = (450, 140)
+        screen.blit(winner_text, winner_text_rect)
+
+        second_text = pygame.font.Font('freesansbold.ttf', 15).render(f"2nd {ranking[1]}", False, ranking[1].color)
+        second_text_rect = second_text.get_rect()
+        second_text_rect.center = (450, 250)
+        screen.blit(second_text, second_text_rect)
+
+        if len(game.players) > 2:
+            third_text = pygame.font.Font('freesansbold.ttf', 15).render(f"3rd {ranking[2]}", False, ranking[2].color)
+            third_text_rect = third_text.get_rect()
+            third_text_rect.center = (450, 280)
+            screen.blit(third_text, third_text_rect)
+
         pygame.display.update()
-        time.sleep(2)
-        player_turn = 0
+        time.sleep(5)
+
+        buttons['new game button'].active = True
+        buttons['create game button'].active = False
+        buttons['increase players button'].active = False
+        buttons['increase num of rounds'].active = False
+        buttons['decrease players button'].active = False
+        buttons['decrease num of rounds'].active = False
+        buttons['num of rounds'].active = False
+        buttons['num of players'].active = False
+        buttons['text num of rounds'].active = False
+        buttons['text num of players'].active = False
 
     pygame.display.update()
-pygame.quit()

@@ -2,6 +2,108 @@ import time
 import pygame
 import math
 
+class Game:
+    def __init__(self, screen, players, num_of_rounds):
+        self.board = [[Pixel(3*x, 3*y) for x in range(300)] for y in range(200)]
+        players_colors = [(20, 60, 160),(20, 160, 60),(255, 255, 0),(255, 0, 0),(255, 140, 0),(130, 0, 70)]
+        self.players = [Player(i, players_colors.pop()) for i in range(players)]
+        self.next_turn = lambda player : player + 1 if player < len(self.players)-1 else 0
+        self.ground_function = lambda x : 2*math.sqrt(x) + 500
+        self.num_of_rounds = num_of_rounds
+        self.screen = screen
+        self.dying_order = []
+
+    def explosion(self, x, y, strength):
+        for i in range(strength):
+            pygame.draw.circle(self.screen, (200, 130, 0), (x, y), i)
+            pygame.draw.circle(self.screen, (255, 130, 0), (x, y), 0.5 * i)
+            pygame.display.update()
+            time.sleep(0.001)
+        for column in self.board:
+            for pixel in column:
+                if (pixel.x - x) ** 2 + (pixel.y - y) ** 2 < strength ** 2:
+                    pixel.ground = False
+        for player in self.players:
+            tank = player.tank
+            if tank:
+                if x-strength < tank.x < x+strength and y-strength < tank.y < y+strength:
+                    tank.health -= strength
+                    tank.max_shot_power -= 0.5*strength
+                if tank.health <= 0:
+                    player.tank = None
+                    self.explosion(tank.x, tank.y, 20)
+                    self.dying_order.append(player)
+                    return
+class Player:
+    def __init__(self, id, color):
+        self.player_id = id
+        self.score = 0
+        self.color = color
+        self.tank = None
+    def __repr__(self):
+        return f'player {self.player_id+1}'
+
+class Pixel:
+
+    def __init__(self, x, y):
+        self.x = x
+        self.y = y
+        self.ground = False
+
+class Weapon:
+
+    def __init__(self, x, y, velocity_x, velocity_y):
+        self.x = x
+        self.y = y
+        self.strength = 15
+        self.velocity_x = velocity_x
+        self.velocity_y = velocity_y
+
+    def draw(self, screen):
+        pygame.draw.circle(screen, (0,0,0), (self.x, self.y), 2)
+
+    def move(self, wind):
+        self.x += self.velocity_x
+        self.y += self.velocity_y
+        self.velocity_y += 0.2
+        self.velocity_x += wind * 0.005
+        time.sleep(0.01)
+
+class Tank:
+    def __init__(self, x, y, color):
+        self.x = x
+        self.y = y
+        self.color = color
+        self.gun_direction = 90
+        self.health = 100
+        self.shot_power = 50
+        self.max_shot_power = 100
+
+    def move(self, change):
+        if 0 <= self.x <= 900:
+            self.x += change
+
+    def move_gun(self, change):
+        if 0 < self.gun_direction < 180:
+            self.gun_direction += change
+        elif self.gun_direction <= 0:
+            self.gun_direction = 1
+        elif self.gun_direction >= 180:
+            self.gun_direction = 179
+    def edit_shot_power(self, change):
+        if 0 < self.shot_power < self.max_shot_power:
+            self.shot_power += change
+
+    def draw(self, screen):
+        pygame.draw.rect(screen, self.color, (self.x, self.y - 7, 13, 10))
+        pygame.draw.rect(screen, self.color, (self.x - 6.5, self.y - 2, 26, 10))
+        pygame.draw.rect(screen, (0,0,0), (self.x - 6, self.y + 5, 24, 4))
+        pygame.draw.line(screen, (0,0,0), (self.x + 5, self.y - 7), (self.x + (20 * math.cos((self.gun_direction / 360) * 2 * math.pi)), self.y - 7 - (20 * math.sin((self.gun_direction / 360) * 2 * math.pi))), 5)
+
+    def shot(self):
+        return Weapon(self.x+(20*math.cos((self.gun_direction/360)*2*math.pi)), self.y-(20*math.sin((self.gun_direction/360)*2*math.pi)),
+                      self.shot_power*0.2*math.cos((self.gun_direction/360)*2*math.pi), -self.shot_power*0.2*math.sin((self.gun_direction/360)*2*math.pi))
+
 class Button:
     def __init__(self, screen, pos, size, text, active):
         #main vars
@@ -66,13 +168,14 @@ class Button:
         self.__text = self.__text_font.render(text, False, (0, 0, 0))
 
 class Slider:
-    def __init__(self, screen, pos):
+    def __init__(self, screen, pos, text):
         self.screen = screen
         self.position = pos
         self.size = (150, 25)
         self.top_rect = pygame.Rect(self.position[0], self.position[1], self.size[0], self.size[1])
         self.bottom_rect = pygame.Rect(self.position[0] + 2, self.position[1] + 5, self.size[0], self.size[1])
         self.slider_pos = 50
+        self.text = text
 
     def draw(self, max_shot_power):
         self.max_shot_power = max_shot_power
@@ -87,7 +190,7 @@ class Slider:
         pygame.draw.circle(self.screen, (205,205,0), self.top_rect.topright, 10)
         pygame.draw.rect(self.screen, (205,205,0), ((self.top_rect.topleft[0] - 10, self.top_rect.topleft[1]), (self.top_rect.size[0] + 20, self.top_rect.size[1])))
         pygame.draw.rect(self.screen, (205,205,0), ((self.top_rect.topleft[0], self.top_rect.topleft[1] - 10), (self.top_rect.size[0], self.top_rect.size[1] + 20)))
-        self.screen.blit(pygame.font.SysFont('shot power' + "font", 20).render('SHOT POWER', False, (0, 0, 0)), (self.position[0]+30, self.position[1]))
+        self.screen.blit(pygame.font.SysFont('shot power' + "font", 20).render(self.text, False, (0, 0, 0)), (self.position[0]+30, self.position[1]))
         pygame.draw.rect(self.screen, (10,10,10), ((self.position[0]+10, self.position[1]+20), (130, 5)))
         pygame.draw.rect(self.screen, (255, 0, 0), ((self.position[0]+10+(self.max_shot_power*1.3),self.position[1]+20),((100-self.max_shot_power)*1.3,5)))
         pygame.draw.circle(self.screen, (255,100,0), (self.position[0]+10+(self.slider_pos*1.3), self.position[1]+22), 8)
@@ -105,102 +208,3 @@ class Slider:
                     self.slider_pos = new_slider_pos
         return self.slider_pos
 
-
-class Game:
-    def __init__(self, screen, players, num_of_rounds):
-        self.board = [[Pixel(3*x, 3*y) for x in range(300)] for y in range(200)]
-        players_colors = [(20, 60, 160),(20, 160, 60),(255, 255, 0),(255, 0, 0),(255, 140, 0),(130, 0, 70)]
-        self.players = [Player(i, players_colors.pop()) for i in range(players)]
-        self.next_turn = lambda player : player + 1 if player < len(self.players)-1 else 0
-        self.ground_function = lambda x : 2*math.sqrt(x) + 500
-        self.num_of_rounds = num_of_rounds
-        self.screen = screen
-
-    def explosion(self, x, y, strength):
-        for i in range(strength):
-            pygame.draw.circle(self.screen, (200, 130, 0), (x, y), i)
-            pygame.draw.circle(self.screen, (255, 130, 0), (x, y), 0.5 * i)
-            pygame.display.update()
-            time.sleep(0.001)
-        for column in self.board:
-            for pixel in column:
-                if (pixel.x - x) ** 2 + (pixel.y - y) ** 2 < strength ** 2:
-                    pixel.ground = False
-        for player in self.players:
-            tank = player.tank
-            if tank:
-                if x-strength < tank.x < x+strength and y-strength < tank.y < y+strength:
-                    tank.health -= strength
-                    tank.max_shot_power -= 0.5*strength
-                if tank.health <= 0:
-                    player.tank = None
-                    self.explosion(tank.x, tank.y, 20)
-                    player.score += 100 * (len(self.players) - sum((1 if player.tank else 0 for player in self.players)))
-                    return
-class Player:
-    def __init__(self, id, color):
-        self.player_id = id
-        self.score = 0
-        self.color = color
-        self.tank = None
-
-class Pixel:
-
-    def __init__(self, x, y):
-        self.x = x
-        self.y = y
-        self.ground = False
-
-class Weapon:
-
-    def __init__(self, x, y, velocity_x, velocity_y):
-        self.x = x
-        self.y = y
-        self.strength = 15
-        self.velocity_x = velocity_x
-        self.velocity_y = velocity_y
-
-    def draw(self, screen):
-        pygame.draw.circle(screen, (0,0,0), (self.x, self.y), 2)
-
-    def move(self, wind):
-        self.x += self.velocity_x
-        self.y += self.velocity_y
-        self.velocity_y += 0.2
-        self.velocity_x += wind * 0.005
-        time.sleep(0.01)
-
-class Tank:
-    def __init__(self, x, y, color):
-        self.x = x
-        self.y = y
-        self.color = color
-        self.gun_direction = 90
-        self.health = 100
-        self.shot_power = 50
-        self.max_shot_power = 100
-
-    def move(self, change):
-        if 0 <= self.x <= 900:
-            self.x += change
-
-    def move_gun(self, change):
-        if 0 < self.gun_direction < 180:
-            self.gun_direction += change
-        elif self.gun_direction <= 0:
-            self.gun_direction = 1
-        elif self.gun_direction >= 180:
-            self.gun_direction = 179
-    def edit_shot_power(self, change):
-        if 0 < self.shot_power < self.max_shot_power:
-            self.shot_power += change
-
-    def draw(self, screen):
-        pygame.draw.rect(screen, self.color, (self.x, self.y - 7, 13, 10))
-        pygame.draw.rect(screen, self.color, (self.x - 6.5, self.y - 2, 26, 10))
-        pygame.draw.rect(screen, (0,0,0), (self.x - 6, self.y + 5, 24, 4))
-        pygame.draw.line(screen, (0,0,0), (self.x + 5, self.y - 7), (self.x + (20 * math.cos((self.gun_direction / 360) * 2 * math.pi)), self.y - 7 - (20 * math.sin((self.gun_direction / 360) * 2 * math.pi))), 5)
-
-    def shot(self):
-        return Weapon(self.x+(20*math.cos((self.gun_direction/360)*2*math.pi)), self.y-(20*math.sin((self.gun_direction/360)*2*math.pi)),
-                      self.shot_power*0.2*math.cos((self.gun_direction/360)*2*math.pi), -self.shot_power*0.2*math.sin((self.gun_direction/360)*2*math.pi))
