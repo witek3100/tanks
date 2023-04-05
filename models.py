@@ -45,7 +45,7 @@ class Button:
     def clicked(self):
         if self.active:
             pos = pygame.mouse.get_pos()
-            if self.top_rect.collidepoint(pos):
+            if self.top_rect.collidepoint(pos) or self.bottom_rect.collidepoint(pos):
                 self.__top_rect_color = self.__top_rect_hovered_color
                 self.__bottom_rect_color = self.__bottom_rect_hovered_color
                 if pygame.mouse.get_pressed()[0] and self.pressed == False:
@@ -66,13 +66,34 @@ class Button:
         self.__text = self.__text_font.render(text, False, (0, 0, 0))
 
 class Game:
-    def __init__(self, players, num_of_rounds):
+    def __init__(self, screen, players, num_of_rounds):
         self.board = [[Pixel(3*x, 3*y) for x in range(300)] for y in range(200)]
-        self.players = [Player(i, (255,255,255)) for i in range(players)]
+        players_colors = [(20, 60, 160),(20, 160, 60),(255, 255, 0),(255, 0, 0),(255, 140, 0)]
+        self.players = [Player(i, players_colors.pop()) for i in range(players)]
         self.next_turn = lambda player : player + 1 if player < len(self.players)-1 else 0
-        self.ground_function = lambda x : 2*math.sqrt(x) + 400
+        self.ground_function = lambda x : 2*math.sqrt(x) + 500
         self.num_of_rounds = num_of_rounds
+        self.screen = screen
 
+    def explosion(self, x, y, strength):
+        for i in range(strength):
+            pygame.draw.circle(self.screen, (200, 130, 0), (x, y), i)
+            pygame.draw.circle(self.screen, (255, 130, 0), (x, y), 0.5 * i)
+            pygame.display.update()
+            time.sleep(0.001)
+        for column in self.board:
+            for pixel in column:
+                if (pixel.x - x) ** 2 + (pixel.y - y) ** 2 < strength ** 2:
+                    pixel.ground = False
+        for player in self.players:
+            tank = player.tank
+            if tank:
+                if x-strength < tank.x < x+strength and y-strength < tank.y < y+strength:
+                    tank.health -= strength
+                if tank.health <= 0:
+                    player.tank = None
+                    self.explosion(tank.x, tank.y, 20)
+                    return
 class Player:
     def __init__(self, id, color):
         self.player_id = id
@@ -104,6 +125,7 @@ class Weapon:
         self.y += self.velocity_y
         self.velocity_y += 0.2
         self.velocity_x += wind * 0.005
+        time.sleep(0.015)
 
 class Tank:
     def __init__(self, x, y, color):
