@@ -54,10 +54,16 @@ class Button:
                     pygame.display.update()
                     time.sleep(0.05)
                     return True
+                self.top_rect.x = self.position[0]
+                self.top_rect.y = self.position[1]
             else:
                 self.__top_rect_color = self.__top_rect_normal_color
                 self.__bottom_rect_color = self.__bottom_rect_normal_color
             return False
+
+    def update_text(self, text):
+        self.__text_font = pygame.font.SysFont(str(text) + "font", 30)
+        self.__text = self.__text_font.render(text, False, (0, 0, 0))
 
 class Game:
     def __init__(self, players, num_of_rounds):

@@ -83,7 +83,7 @@ while run_menu:
         if event.type == pygame.QUIT:
             sys.exit()
 
-    ''' animation '''
+    ''' shoting tanks animation '''
     tank1 = models.Tank(100, 500, RED)
     tank1.gun_direction = 40
     tank2 = models.Tank(800, 500, BLUE)
@@ -102,29 +102,33 @@ while run_menu:
         explosion(weapon.x, weapon.y, 30)
         weapon = None
 
+    for button_key in buttons.keys():
+        buttons[button_key].draw()
+
     game = None
     if buttons['new game button'].clicked():
         for button_key in buttons.keys():
             buttons[button_key].active = True
         buttons['new game button'].active = False
 
-    for button_key in buttons.keys():
-        buttons[button_key].draw()
-
     if buttons['create game button'].clicked():
         game = models.Game(num_of_players, num_of_rounds)
     if buttons['increase players button'].clicked():
-        num_of_players += 1
-        buttons['num of players'] = models.Button(screen, (440, 170), (20, 20), '{}'.format(num_of_players), False)
+        if num_of_players < 6:
+            num_of_players += 1
+        buttons['num of players'].update_text(str(num_of_players))
     if buttons['decrease players button'].clicked():
-        num_of_players -= 1
-        buttons['num of players'] = models.Button(screen, (440, 170), (20, 20), '{}'.format(num_of_players), False)
+        if 2 < num_of_players:
+            num_of_players -= 1
+        buttons['num of players'].update_text(str(num_of_players))
     if buttons['increase num of rounds'].clicked():
-        num_of_rounds += 1
-        buttons['num of rounds'] = models.Button(screen, (440, 290), (20, 20), '{}'.format(num_of_rounds), False)
+        if num_of_rounds < 10:
+            num_of_rounds += 1
+        buttons['num of rounds'].update_text(str(num_of_rounds))
     if buttons['decrease num of rounds'].clicked():
-        num_of_rounds -= 1
-        buttons['num of rounds'] = models.Button(screen, (440, 290), (20, 20), '{}'.format(num_of_rounds), False)
+        if 1 < num_of_rounds:
+            num_of_rounds -= 1
+        buttons['num of rounds'].update_text(str(num_of_rounds))
 
     ''' round loop '''
     while game:
