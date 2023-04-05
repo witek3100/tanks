@@ -65,10 +65,51 @@ class Button:
         self.__text_font = pygame.font.SysFont(str(text) + "font", 30)
         self.__text = self.__text_font.render(text, False, (0, 0, 0))
 
+class Slider:
+    def __init__(self, screen, pos):
+        self.screen = screen
+        self.position = pos
+        self.size = (150, 25)
+        self.top_rect = pygame.Rect(self.position[0], self.position[1], self.size[0], self.size[1])
+        self.bottom_rect = pygame.Rect(self.position[0] + 2, self.position[1] + 5, self.size[0], self.size[1])
+        self.slider_pos = 50
+
+    def draw(self, max_shot_power):
+        self.max_shot_power = max_shot_power
+        pygame.draw.circle(self.screen, (205, 102, 0), self.bottom_rect.bottomleft, 10)
+        pygame.draw.circle(self.screen, (205, 102, 0), self.bottom_rect.bottomright, 10)
+        pygame.draw.circle(self.screen, (205, 102, 0), self.bottom_rect.topright, 10)
+        pygame.draw.rect(self.screen, (205, 102, 0), ((self.bottom_rect.topleft[0] - 10, self.bottom_rect.topleft[1]),(self.bottom_rect.size[0] + 20, self.bottom_rect.size[1])))
+        pygame.draw.rect(self.screen, (205, 102, 0), ((self.bottom_rect.topleft[0], self.bottom_rect.topleft[1] - 10),(self.bottom_rect.size[0], self.bottom_rect.size[1] + 20)))
+        pygame.draw.circle(self.screen, (205,205,0), self.top_rect.bottomleft, 10)
+        pygame.draw.circle(self.screen, (205,205,0), self.top_rect.bottomright, 10)
+        pygame.draw.circle(self.screen, (205,205,0), self.top_rect.topleft, 10)
+        pygame.draw.circle(self.screen, (205,205,0), self.top_rect.topright, 10)
+        pygame.draw.rect(self.screen, (205,205,0), ((self.top_rect.topleft[0] - 10, self.top_rect.topleft[1]), (self.top_rect.size[0] + 20, self.top_rect.size[1])))
+        pygame.draw.rect(self.screen, (205,205,0), ((self.top_rect.topleft[0], self.top_rect.topleft[1] - 10), (self.top_rect.size[0], self.top_rect.size[1] + 20)))
+        self.screen.blit(pygame.font.SysFont('shot power' + "font", 20).render('SHOT POWER', False, (0, 0, 0)), (self.position[0]+30, self.position[1]))
+        pygame.draw.rect(self.screen, (10,10,10), ((self.position[0]+10, self.position[1]+20), (130, 5)))
+        pygame.draw.rect(self.screen, (255, 0, 0), ((self.position[0]+10+(self.max_shot_power*1.3),self.position[1]+20),((100-self.max_shot_power)*1.3,5)))
+        pygame.draw.circle(self.screen, (255,100,0), (self.position[0]+10+(self.slider_pos*1.3), self.position[1]+22), 8)
+
+    def clicked(self):
+        pos = pygame.mouse.get_pos()
+        if self.position[0]+10+(self.slider_pos*1.3)-30 < pos[0] < self.position[0]+30+(self.slider_pos*1.3) + 4 and self.position[1] + 10 < pos[1] < self.position[1] + 34:
+            if pygame.mouse.get_pressed()[0]:
+                new_slider_pos = ((pos[0]-self.position[0]-10)/130)*100
+                if new_slider_pos < 0:
+                    self.slider_pos = 0
+                elif new_slider_pos > self.max_shot_power:
+                    self.slider_pos = self.max_shot_power
+                else:
+                    self.slider_pos = new_slider_pos
+        return self.slider_pos
+
+
 class Game:
     def __init__(self, screen, players, num_of_rounds):
         self.board = [[Pixel(3*x, 3*y) for x in range(300)] for y in range(200)]
-        players_colors = [(20, 60, 160),(20, 160, 60),(255, 255, 0),(255, 0, 0),(255, 140, 0)]
+        players_colors = [(20, 60, 160),(20, 160, 60),(255, 255, 0),(255, 0, 0),(255, 140, 0),(130, 0, 70)]
         self.players = [Player(i, players_colors.pop()) for i in range(players)]
         self.next_turn = lambda player : player + 1 if player < len(self.players)-1 else 0
         self.ground_function = lambda x : 2*math.sqrt(x) + 500
@@ -90,9 +131,11 @@ class Game:
             if tank:
                 if x-strength < tank.x < x+strength and y-strength < tank.y < y+strength:
                     tank.health -= strength
+                    tank.max_shot_power -= 0.5*strength
                 if tank.health <= 0:
                     player.tank = None
                     self.explosion(tank.x, tank.y, 20)
+                    player.score += 100 * (len(self.players) - sum((1 if player.tank else 0 for player in self.players)))
                     return
 class Player:
     def __init__(self, id, color):
@@ -125,7 +168,7 @@ class Weapon:
         self.y += self.velocity_y
         self.velocity_y += 0.2
         self.velocity_x += wind * 0.005
-        time.sleep(0.015)
+        time.sleep(0.01)
 
 class Tank:
     def __init__(self, x, y, color):
