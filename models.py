@@ -73,6 +73,8 @@ class Player:
         player color
     tank : Tank
         player tank
+    weapons : Weapon list
+        list of available weapons
 
     Methods
     -------
@@ -84,6 +86,7 @@ class Player:
         self.score = 0
         self.color = color
         self.tank = None
+        self.weapons = ([Weapon, 1000, 'MISSLE'], [SevereMissle, 10, 'SEVERE MISSLE'], [SmallAtomBomb, 2, 'SMALL ATOM BOMB'], [AtomBomb, 1, 'ATOM BOMB'])
     def __repr__(self):
         return f'player {self.player_id+1}'
 
@@ -115,7 +118,7 @@ class Weapon:
         weapon x-cord
     y : int
         weapon y-cord
-    strenght : int
+    strength : int
         strength of weapon explosion
     velocity_x : int
         weapon speed on x cords
@@ -147,7 +150,15 @@ class Weapon:
         time.sleep(0.01)
 
 
-class NuclearMissle(Weapon):
+class SevereMissle(Weapon):
+    '''
+        class representing severe missle weapon
+    '''
+    def __init__(self, x, y, velocity_x, velocity_y):
+        super().__init__(x, y, velocity_x, velocity_y)
+        self.strength = 40
+
+class AtomBomb(Weapon):
     '''
     class representing nuclear weapon
     '''
@@ -155,6 +166,13 @@ class NuclearMissle(Weapon):
         super().__init__(x, y, velocity_x, velocity_y)
         self.strength = 150
 
+class SmallAtomBomb(Weapon):
+    '''
+    class representing smaller nuclear weapon
+    '''
+    def __init__(self, x, y, velocity_x, velocity_y):
+        super().__init__(x, y, velocity_x, velocity_y)
+        self.strength = 80
 
 class Tank:
     '''
@@ -223,8 +241,8 @@ class Tank:
         pygame.draw.rect(screen, (0,0,0), (self.x - 6, self.y + 5, 24, 4))
         pygame.draw.line(screen, (0,0,0), (self.x + 5, self.y - 7), (self.x + (20 * math.cos((self.gun_direction / 360) * 2 * math.pi)), self.y - 7 - (20 * math.sin((self.gun_direction / 360) * 2 * math.pi))), 5)
 
-    def shot(self):
-        return Weapon(self.x+(20*math.cos((self.gun_direction/360)*2*math.pi)), self.y-(20*math.sin((self.gun_direction/360)*2*math.pi)),
+    def shot(self, weapon_type):
+        return weapon_type(self.x+(20*math.cos((self.gun_direction/360)*2*math.pi)), self.y-(20*math.sin((self.gun_direction/360)*2*math.pi)),
                       self.shot_power*0.2*math.cos((self.gun_direction/360)*2*math.pi), -self.shot_power*0.2*math.sin((self.gun_direction/360)*2*math.pi))
 
 class Button:

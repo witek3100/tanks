@@ -7,16 +7,12 @@ import asyncio
 
 async def main():
     pygame.init()
+    screen = pygame.display.set_mode((895, 600))
 
     BLUE = (20, 60, 160)
-    GREEN = (20, 160, 60)
-    GREY = (150, 150, 150)
     YELLOW = (255, 255, 0)
-    BLACK = (0, 0, 0)
     RED = (255, 0, 0)
     ORANGE = (255, 140, 0)
-
-    screen = pygame.display.set_mode((895, 600))
     weapon = None
     num_of_players = 2
     num_of_rounds = 5
@@ -40,6 +36,7 @@ async def main():
             if event.type == pygame.QUIT:
                 sys.exit()
 
+
         ''' configurating menu window '''
         background = pygame.image.load("static/mountains.jpg").convert()
         screen.blit(background, (0, 0))
@@ -52,6 +49,7 @@ async def main():
         title_text_rect_up.center = (447, 47)
         screen.blit(title_text_up, title_text_rect_up)
 
+
         ''' shoting tanks animation '''
         tank1 = models.Tank(100, 500, RED)
         tank1.gun_direction = 40
@@ -61,7 +59,7 @@ async def main():
         tank2.draw(screen)
         if not weapon:
             shoting_tank = random.choice([tank1, tank2])
-            weapon = shoting_tank.shot()
+            weapon = shoting_tank.shot(models.Weapon)
         weapon.draw(screen)
         weapon.x += weapon.velocity_x
         weapon.y += weapon.velocity_y
@@ -73,6 +71,7 @@ async def main():
                 pygame.draw.circle(screen, (255, 130, 0), (weapon.x, weapon.y), 0.5 * i)
                 time.sleep(0.001)
             weapon = None
+
 
         ''' creating game menu '''
         for button_key in buttons.keys():
@@ -108,12 +107,16 @@ async def main():
             for round in range(game.num_of_rounds):
                 if exit_game_loop:
                     break
-                ranking = sorted(game.players, key=lambda player: player.score, reverse=True)
+
                 ''' round pre configuration '''
-                for player in game.players:
-                    tank_spawn_point = random.randint(100, 800)
+                for c, player in enumerate(game.players):
+                    if c%2==0:
+                        tank_spawn_point = random.randint(450,800)
+                    else:
+                        tank_spawn_point = random.randint(100, 450)
                     player.tank = models.Tank(tank_spawn_point, game.ground_function(tank_spawn_point), player.color)
                 wind = random.randint(-10, 10)
+                current_weapon = 0
                 weapon = None
                 for column in game.board:
                     for pixel in column:
@@ -123,6 +126,9 @@ async def main():
                 gun_direction_slider = models.Slider(screen, (200, 100), 'GUN DIRECTION')
                 shot_button = models.Button(screen, (380, 100), (60, 25), 'SHOT', True)
                 exit_button = models.Button(screen, (30, 30), (60, 25), 'EXIT', True)
+                change_weapon_right = models.Button(screen, (400, 45), (15, 15), '->', True)
+                change_weapon_left = models.Button(screen, (130, 45), (15, 15), '<-', True)
+
 
                 ''' displaying round start screen '''
                 screen.blit(background, (0, 0))
@@ -135,27 +141,33 @@ async def main():
                 round_num_text_rect_up = round_num_text_up.get_rect()
                 round_num_text_rect_up.center = (447, 47)
                 screen.blit(round_num_text_up, round_num_text_rect_up)
+                ranking = sorted(game.players, key=lambda player: player.score, reverse=True)
                 for c, player in enumerate(ranking):
                     player_text = pygame.font.Font('freesansbold.ttf', 30).render(f'{player}    score: {player.score}', False, player.color)
                     player_text_rect = player_text.get_rect()
                     player_text_rect.center = (450, 100 + c*40)
                     screen.blit(player_text, player_text_rect)
-                    await asyncio.sleep(0)
-
                 pygame.display.update()
+                await asyncio.sleep(0)
                 time.sleep(3)
                 player_turn = 0
                 game.dying_order.clear()
-                await asyncio.sleep(0)
+
 
                 ''' round loop '''
                 while run_round:
-                    players_alive = sum((1 if player.tank != None else 0 for player in game.players))
+                    for event in pygame.event.get():
+                        if event.type == pygame.QUIT:
+                            sys.exit()
+
+
+                    ''' drawing background and ground '''
                     screen.blit(background, (0, 0))
                     for column in game.board:
                         for pixel in column:
                             if pixel.ground:
                                 pygame.draw.rect(screen, (130, 190, 60), (pixel.x, pixel.y, 3, 3))
+
 
                     ''' options window '''
                     options_position = (20, 20)
@@ -191,20 +203,26 @@ async def main():
                     try:
                         gun_direction_slider.draw(100)
                         power_slider.draw(game.players[player_turn].tank.max_shot_power)
-                        fuel_left_text = pygame.font.Font('freesansbold.ttf', 15).render(
-                            f"FUEL {int(game.players[player_turn].tank.fuel)}", False, (0, 0, 0))
+                        fuel_left_text = pygame.font.Font('freesansbold.ttf', 15).render(f"FUEL {int(game.players[player_turn].tank.fuel)}            WEAPON", False, (0, 0, 0))
                         fuel_left_text_rect = round_num_text_down.get_rect()
-                        fuel_left_text_rect.center = (250, 50)
+                        fuel_left_text_rect.center = (230, 40)
                         screen.blit(fuel_left_text, fuel_left_text_rect)
+                        current_weapon_text = pygame.font.Font('freesansbold.ttf', 15).render(f"{game.players[player_turn].weapons[current_weapon][2]}    {game.players[player_turn].weapons[current_weapon][1]} left", False,(100, 0, 0))
+                        current_weapon_text_rect = current_weapon_text.get_rect()
+                        current_weapon_text_rect.center = (270, 50)
+                        screen.blit(current_weapon_text, current_weapon_text_rect)
                     except AttributeError:
                         pass
-                    pygame.draw.polygon(screen, (30,30,130), ((100, 180),(100, 186), (100+wind*3,186), (100+wind*4,183), (100+wind*3,180)))
+                    pygame.draw.polygon(screen, (30,30,130), ((100, 180), (100, 186), (100+wind*3,186), (100+wind*4,183), (100+wind*3,180)))
                     wind_text = pygame.font.Font('freesansbold.ttf', 10).render(f"WIND", False, (30, 30, 130))
                     wind_text_rect = wind_text.get_rect()
                     wind_text_rect.topleft = (20, 180)
                     screen.blit(wind_text, wind_text_rect)
+                    change_weapon_left.draw()
+                    change_weapon_right.draw()
 
-                    ''' players stats '''
+
+                    ''' player ranking window '''
                     stats_position = (470, 20)
                     stats_top_rect = pygame.Rect(stats_position[0], stats_position[1], 390, len(game.players)*30)
                     stats_bottom_rect = pygame.Rect(stats_position[0] + 2, stats_position[1] + 5, 390, len(game.players*30))
@@ -220,7 +238,6 @@ async def main():
                     pygame.draw.rect(screen, (205, 205, 0), ((stats_top_rect.topleft[0] - 10, stats_top_rect.topleft[1]),(stats_top_rect.size[0] + 20, stats_top_rect.size[1])))
                     pygame.draw.rect(screen, (205, 205, 0), ((stats_top_rect.topleft[0], stats_top_rect.topleft[1] - 10),(stats_top_rect.size[0], stats_top_rect.size[1] + 20)))
                     pygame.draw.polygon(screen, (255, 140, 0), ((465, 22+30*player_turn), (465, 42+30*player_turn), (485, 32+30*player_turn)))
-
                     stats = []
                     for player in game.players:
                         if player.tank:
@@ -235,6 +252,8 @@ async def main():
                         text_rect.y += 25 + 30*c
                         screen.blit(player_data, text_rect)
 
+
+                    ''' tank falling and destroying when out of board  '''
                     for player in game.players:
                         tank = player.tank
                         if tank:
@@ -256,10 +275,12 @@ async def main():
                     if game.players[player_turn].tank == None:
                         player_turn = game.next_turn(player_turn)
 
+
+                    ''' handling weapon movement '''
                     if weapon != None:
                         if 0 < weapon.x < 900 and 0 < weapon.y < 600:
                             if game.board[int(weapon.y/3)][int(weapon.x/3)].ground == True:
-                                game.explosion(weapon.x, weapon.y, 20)
+                                game.explosion(weapon.x, weapon.y, weapon.strength)
                                 weapon = None
                                 wind = random.randint(-10, 10)
                                 player_turn = game.next_turn(player_turn)
@@ -271,10 +292,8 @@ async def main():
                             wind = random.randint(-10, 10)
                             player_turn = game.next_turn(player_turn)
 
-                    for event in pygame.event.get():
-                        if event.type == pygame.QUIT:
-                            sys.exit()
 
+                    ''' handling user input '''
                     try:
                         keys = pygame.key.get_pressed()
                         if keys[pygame.K_LEFT] and game.players[player_turn].tank.fuel > 0:
@@ -289,29 +308,49 @@ async def main():
                             game.players[player_turn].tank.move_gun(1)
                         if keys[pygame.K_DOWN]:
                             game.players[player_turn].tank.move_gun(-1)
-                        if keys[pygame.K_SPACE] and weapon == None:
-                            weapon = game.players[player_turn].tank.shot()
-                        if shot_button.clicked() and weapon == None:
-                            weapon = game.players[player_turn].tank.shot()
+                        if keys[pygame.K_SPACE] and weapon == None and game.players[player_turn].weapons[current_weapon][1] > 0:
+                            weapon = game.players[player_turn].tank.shot(game.players[player_turn].weapons[current_weapon][0])
+                            game.players[player_turn].weapons[current_weapon][1] -= 1
+                        if shot_button.clicked() and weapon == None and game.players[player_turn].weapons[current_weapon][1] > 0:
+                            weapon = game.players[player_turn].tank.shot(game.players[player_turn].weapons[current_weapon][0])
+                            game.players[player_turn].weapons[current_weapon][1] -= 1
                         if exit_button.clicked():
                             exit_game_loop = True
                             break
+                        if change_weapon_left.clicked():
+                            if current_weapon == 0:
+                                current_weapon = 3
+                            else:
+                                current_weapon -= 1
+                            time.sleep(0.05)
+                        if change_weapon_right.clicked():
+                            if current_weapon == 3:
+                                current_weapon = 0
+                            else:
+                                current_weapon += 1
+                            time.sleep(0.05)
                         game.players[player_turn].tank.shot_power = power_slider.clicked()
                         game.players[player_turn].tank.gun_direction = 180 - 1.8 * gun_direction_slider.clicked()
                     except AttributeError:
                         pass
                     pygame.display.update()
+                    await asyncio.sleep(0)
 
+
+                    ''' checking round end condition '''
+                    players_alive = sum((1 if player.tank != None else 0 for player in game.players))
                     if players_alive == 1:
                         for c, player in enumerate(game.dying_order):
                             player.score += 500*c
                         [player for player in game.players if player not in game.dying_order][0].score += 800 * len(game.players)
                         break
+
                     await asyncio.sleep(0)
                 await asyncio.sleep(0)
 
-            ranking = sorted(game.players, key=lambda player : player.score, reverse=True)
 
+            ''' displaying final results '''
+            ranking = sorted(game.players, key=lambda player : player.score, reverse=True)
             screen.blit(background, (0, 0))
             winner_text_down = pygame.font.Font('freesansbold.ttf', 30).render("WINNER", False, YELLOW)
             winner_text_rect_down = winner_text_down.get_rect()
@@ -321,17 +360,14 @@ async def main():
             winner_text_rect_down = winner_text_down.get_rect()
             winner_text_rect_down.center = (447, 97)
             screen.blit(winner_text_down, winner_text_rect_down)
-
             winner_text = pygame.font.Font('freesansbold.ttf', 30).render(f"{ranking[0]}", False, ranking[0].color)
             winner_text_rect = winner_text.get_rect()
             winner_text_rect.center = (450, 140)
             screen.blit(winner_text, winner_text_rect)
-
             second_text = pygame.font.Font('freesansbold.ttf', 15).render(f"2nd {ranking[1]}", False, ranking[1].color)
             second_text_rect = second_text.get_rect()
             second_text_rect.center = (450, 250)
             screen.blit(second_text, second_text_rect)
-
             if len(game.players) > 2:
                 third_text = pygame.font.Font('freesansbold.ttf', 15).render(f"3rd {ranking[2]}", False, ranking[2].color)
                 third_text_rect = third_text.get_rect()
@@ -339,20 +375,23 @@ async def main():
                 screen.blit(third_text, third_text_rect)
 
             pygame.display.update()
+            await asyncio.sleep(0)
             time.sleep(5)
 
+            for button_k in buttons:
+                buttons[button_k].active = False
             buttons['new game button'].active = True
-            buttons['create game button'].active = False
-            buttons['increase players button'].active = False
-            buttons['increase num of rounds'].active = False
-            buttons['decrease players button'].active = False
-            buttons['decrease num of rounds'].active = False
-            buttons['num of rounds'].active = False
-            buttons['num of players'].active = False
-            buttons['text num of rounds'].active = False
-            buttons['text num of players'].active = False
-            await asyncio.sleep(0)
-        await asyncio.sleep(0)
+            # buttons['create game button'].active = False
+            # buttons['increase players button'].active = False
+            # buttons['increase num of rounds'].active = False
+            # buttons['decrease players button'].active = False
+            # buttons['decrease num of rounds'].active = False
+            # buttons['num of rounds'].active = False
+            # buttons['num of players'].active = False
+            # buttons['text num of rounds'].active = False
+            # buttons['text num of players'].active = False
+
         pygame.display.update()
+        await asyncio.sleep(0)
 
 asyncio.run(main())
