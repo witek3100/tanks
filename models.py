@@ -3,12 +3,37 @@ import pygame
 import math
 
 class Game:
+    '''
+    class used to represent game
+    ...
+    Attributes
+    ----------
+    board : Pixel list
+        store Pixel objects to indicate where ground is
+    players_colors : tuple list
+        six colors for six players
+    players : Player list
+        list of players
+    next_turn : function
+        function to calculate next turn player id
+    ground_function : function
+        function describing ground shape, pixels with y-cord lesser than ground_function(x-cord) are set as ground pixels
+    num_of_rounds : int
+        number of rounds
+    screen : pygame.Surface
+        game screen
+
+    Methods
+    -------
+    explosion
+        destroying ground Pixels and decreasing tanks health if weapon hits ground
+    '''
     def __init__(self, screen, players, num_of_rounds):
         self.board = [[Pixel(3*x, 3*y) for x in range(300)] for y in range(200)]
-        players_colors = [(20, 60, 160),(20, 160, 60),(255, 255, 0),(255, 0, 0),(255, 140, 0),(130, 0, 70)]
-        self.players = [Player(i, players_colors.pop()) for i in range(players)]
+        self.players_colors = [(20, 60, 160),(20, 160, 60),(255, 255, 0),(255, 0, 0),(255, 140, 0),(130, 0, 70)]
+        self.players = [Player(i, self.players_colors.pop()) for i in range(players)]
         self.next_turn = lambda player : player + 1 if player < len(self.players)-1 else 0
-        self.ground_function = lambda x : 2*math.sqrt(x) + 500
+        self.ground_function = lambda x : 3*math.sqrt(x)+500
         self.num_of_rounds = num_of_rounds
         self.screen = screen
         self.dying_order = []
@@ -35,6 +60,25 @@ class Game:
                     self.dying_order.append(player)
                     return
 class Player:
+    '''
+    class representing player
+    ...
+    Attributes
+    ---------
+    player_id : int
+        player indicator
+    score : int
+        player score
+    color : int
+        player color
+    tank : Tank
+        player tank
+
+    Methods
+    -------
+    __repr__
+        str representation of player, used in displaying stats
+    '''
     def __init__(self, id, color):
         self.player_id = id
         self.score = 0
@@ -44,18 +88,51 @@ class Player:
         return f'player {self.player_id+1}'
 
 class Pixel:
-
+    '''
+    dataclass representing Pixel
+    ...
+    Attributes
+    ----------
+    x : int
+        Pixel x-cord
+    y : int
+        Pixel y-cord
+    ground : bool
+        indicates whether the pixel is a ground pixel or not
+    '''
     def __init__(self, x, y):
         self.x = x
         self.y = y
         self.ground = False
 
 class Weapon:
+    '''
+    class used to represent missles
+    ...
+    Attributes
+    ----------
+    x : int
+        weapon x-cord
+    y : int
+        weapon y-cord
+    strenght : int
+        strength of weapon explosion
+    velocity_x : int
+        weapon speed on x cords
+    velocity_y : int
+        weapon speed on y cords
 
+    Methods
+    -------
+    draw
+        drawing circle representing missle on game screen
+    move
+        moving missile according to its speed and increasing its velocity to make it falling
+    '''
     def __init__(self, x, y, velocity_x, velocity_y):
         self.x = x
         self.y = y
-        self.strength = 15
+        self.strength = 25
         self.velocity_x = velocity_x
         self.velocity_y = velocity_y
 
@@ -69,7 +146,52 @@ class Weapon:
         self.velocity_x += wind * 0.005
         time.sleep(0.01)
 
+
+class NuclearMissle(Weapon):
+    '''
+    class representing nuclear weapon
+    '''
+    def __init__(self, x, y, velocity_x, velocity_y):
+        super().__init__(x, y, velocity_x, velocity_y)
+        self.strength = 150
+
+
 class Tank:
+    '''
+    class representing tank
+    ...
+    Attributes
+    ----------
+    x : int
+        tank x-cord
+    y : int
+        tank y-cord
+    color : tuple
+        tank color - same as the player color it belongs to
+    gun_direction : int
+        angle of tank gun lean
+    health : int
+        tank health
+    shot_power : int
+        current tank shot power, selected by player using shot power slider
+    max_shot_power : int
+        max available shot power, depends on tank health
+    fuel : int
+        fuel left
+
+    Methods
+    -------
+    move
+        moving tank in direction indicated by change arg
+    move_gun
+        changing gun_direction
+    edit_shot_power
+        changing shot_power
+    draw
+        drawing tank on game screen
+    shot
+        returning new Weapon objects with tank gun starting cords and speed dependent on shot_power
+    '''
     def __init__(self, x, y, color):
         self.x = x
         self.y = y
@@ -78,6 +200,7 @@ class Tank:
         self.health = 100
         self.shot_power = 50
         self.max_shot_power = 100
+        self.fuel = 100
 
     def move(self, change):
         if 0 <= self.x <= 900:
@@ -105,6 +228,25 @@ class Tank:
                       self.shot_power*0.2*math.cos((self.gun_direction/360)*2*math.pi), -self.shot_power*0.2*math.sin((self.gun_direction/360)*2*math.pi))
 
 class Button:
+    '''
+    class representing button
+    ...
+    Attributes
+    screen : pygame.Surface
+        game screen
+    position : tuple
+        position of button
+    size : tuple
+        size of button
+    top_rect : pygame.Rect
+        upper surface of button
+    bottom_rect : pygame.Rect
+        bottom surface of button
+    pressed : bool
+        indicates whether button is pressed or not
+    active : bool
+        indicates whether button is active or not
+    '''
     def __init__(self, screen, pos, size, text, active):
         #main vars
         self.screen = screen
@@ -168,6 +310,26 @@ class Button:
         self.__text = self.__text_font.render(text, False, (0, 0, 0))
 
 class Slider:
+    '''
+    class representing slider
+    ...
+    Attributes
+    ----------
+    screen : pygame.Surface
+        game screen
+    position : tuple
+        position of slider
+    size : tuple
+        size of slider
+    top_rect : pygame.Rect
+        upper surface of slider
+    bottom_rect : pygame.Rect
+        bottom surface of slider
+    slider_pos : int
+        slider position
+    text : str
+        slider text
+    '''
     def __init__(self, screen, pos, text):
         self.screen = screen
         self.position = pos

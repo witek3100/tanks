@@ -2,7 +2,7 @@
 pygame implementation of iconic childhood game tanks2d
 
 ##
-Try browser version here
+Try browser version [here](https://witek13.itch.io/tanks2d)
 
 or run locally:
 ```Python I'm A tab
