@@ -381,15 +381,6 @@ async def main():
             for button_k in buttons:
                 buttons[button_k].active = False
             buttons['new game button'].active = True
-            # buttons['create game button'].active = False
-            # buttons['increase players button'].active = False
-            # buttons['increase num of rounds'].active = False
-            # buttons['decrease players button'].active = False
-            # buttons['decrease num of rounds'].active = False
-            # buttons['num of rounds'].active = False
-            # buttons['num of players'].active = False
-            # buttons['text num of rounds'].active = False
-            # buttons['text num of players'].active = False
 
         pygame.display.update()
         await asyncio.sleep(0)
